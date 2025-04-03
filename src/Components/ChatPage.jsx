@@ -15,10 +15,10 @@ import {
   FiCheck,
   FiX,
   FiShield,
-  FiCrown,
   FiUserCheck,
   FiSettings
 } from 'react-icons/fi';
+import { FaCrown } from 'react-icons/fa';
 
 const ChatPage = () => {
   const [message, setMessage] = useState('');
