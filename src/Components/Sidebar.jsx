@@ -31,16 +31,16 @@ function Sidebar() { // Accept userRole as prop
           // Affiliate Navigation
           <>
             <NavItem to="/dashboard" icon={<FiHome size={20} />} text="Home" />
-            <NavItem to="/referrals" icon={<FiUsers size={20} />} text="Referrals" />
-            <NavItem to="/notifications" icon={<FiBell size={20} />} text="Notifications" />
-            <NavItem to="/profit" icon={<IoMdPerson size={20} />} text="Profile" />
+            <NavItem to="/refearals" icon={<FiUsers size={20} />} text="Referrals" />
+            <NavItem to="/notification" icon={<FiBell size={20} />} text="Notifications" />
+            <NavItem to="/profile" icon={<IoMdPerson size={20} />} text="Profile" />
           </>
         ) : (
           // Regular User Navigation
           <>
             <NavItem to="/dashboard" icon={<FiHome size={20} />} text="Home" />
             <NavItem to="/groups" icon={<FiUsers size={20} />} text="Groups" />
-            <NavItem to="/notifications" icon={<FiBell size={20} />} text="Notifications" />
+            <NavItem to="/notification" icon={<FiBell size={20} />} text="Notifications" />
             <NavItem to="/profile" icon={<FiUser size={20} />} text="Profile" />
           </>
         )}

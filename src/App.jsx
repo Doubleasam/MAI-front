@@ -11,11 +11,12 @@ import Layout from './Components/Layout';
 import DashboardLayout from './Components/DashboardLayout'; // Import your DashboardLayout
 import AffiliateRegistration from './Components/AffilateUser/AffiliateRegistration';
 import Referrals from './Pages/Referals';
-import ProfilePage from './Pages/ProfilePage';
-
+import ProfilePage from './Pages/ProfilePage';import GroupCreationFlow from './Pages/GroupCreationFlow';
+import GroupListPage from './Pages/GroupListPage';
+import ChatPage from './Components/ChatPage';
+import NotificationPage from './Pages/NotificationPage';
 function App() {
   return (
-    
       <Routes>
         {/* Public routes without Layout */}
         <Route path="/" element={<SignIn />} />
@@ -32,7 +33,10 @@ function App() {
           <Route path="/dashboard" element={<DashboardLayout />} />
           <Route path='/refearals' element={<Referrals />}  />
           <Route path='/profile' element={<ProfilePage />} />
-         
+         <Route path='/group' element={<GroupCreationFlow />} />
+         <Route path='/groupList' element={<GroupListPage />} />
+         <Route path='/chat'  element={<ChatPage />} />
+         <Route path='/notification' element={<NotificationPage />} />
         </Route>
       </Routes>
   
