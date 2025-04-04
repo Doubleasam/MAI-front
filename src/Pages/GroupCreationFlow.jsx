@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FiArrowLeft, FiShare2, FiCopy, FiUserPlus, FiUpload, FiX } from 'react-icons/fi';
 import useGroupStore from '../Store/group';
-import {useNavigate} from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from '../Api/axios';
 const GroupCreationFlow = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -89,27 +89,35 @@ const GroupCreationFlow = () => {
   const handleCreateGroup = async () => {
     try {
       setError('');
-  
+
       const formData = new FormData();
       formData.append('name', groupData.name);
       formData.append('description', groupData.description || '');
       formData.append('savingsAmount', groupData.amount);
       formData.append('frequency', groupData.frequency);
       formData.append('maxMembers', groupData.memberLimit);
+
       formData.append('privacy', 'public'); // Default to public
       formData.append('inviteCode', groupData.inviteCode);
-      
+
+      formData.append('payoutDate', groupData.payoutDate);
+      formData.append("inviteCode", groupData.inviteCode)
+
+
       if (groupData.profilePicture) {
         formData.append('image', groupData.profilePicture);
       }
-  
+
       const response = await axios.post('/api/group/createGroup', formData, {
         headers: {
+
           'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'multipart/form-data'
+
         }
       });
-  
+
       if (response.data.success) {
         setCurrentStep(5); // Show success step
       } else {
@@ -117,11 +125,15 @@ const GroupCreationFlow = () => {
       }
     } catch (err) {
       console.error('Create group error:', err);
+
       setError(
-        err.response?.data?.message || 
-        err.message || 
+        err.response?.data?.message ||
+        err.message ||
         'Failed to create group. Please try again.'
       );
+
+      setError(err.response?.data?.message || err.message || 'Failed to create group');
+
     }
   };
 

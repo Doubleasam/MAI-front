@@ -18,6 +18,7 @@ import ChatPage from './Components/ChatPage';
 import NotificationPage from './Pages/NotificationPage';
 import useAuthStore from './Store/Auth';
 import GroupListTable from './Pages/GroupListPage';
+import HomePage from './Pages/HomePage';
 
 // Auth Protected Route Component
 const ProtectedRoute = () => {
@@ -37,6 +38,7 @@ function App() {
     <Routes>
       {/* Public routes (only accessible when logged out) */}
       <Route element={<PublicRoute />}>
+      <Route path='/' element={<HomePage />} />
         <Route path="/signIn" element={<SignIn />} />
         <Route path="/signup" element={<CreateAccount />} />
         <Route path="/otp" element={<OtpVerification />} />
