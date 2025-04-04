@@ -1,11 +1,20 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { FiUsers, FiCalendar } from 'react-icons/fi';
 import Money from "../assets/money.jpeg";
+import useReferralStore from '../Store/useReferralStore';
+import useGroupStore from '../Store/group';
 
-const RecentGroup = ({ isAffiliate=true, referrals=[], transactions=[] }) => {
-  const progress = 70;
-  const members = 12;
-  const daysLeft = 15;
+const RecentGroup = ({ isAffiliate = true }) => {
+  const { referrals, fetchMyReferrals } = useReferralStore();
+  const { recentGroup, fetchRecentGroup } = useGroupStore();
+
+  useEffect(() => {
+    if (isAffiliate) {
+      fetchMyReferrals();
+    } else {
+      fetchRecentGroup();
+    }
+  }, [isAffiliate, fetchMyReferrals, fetchRecentGroup]);
 
   if (isAffiliate) {
     return (
@@ -22,11 +31,11 @@ const RecentGroup = ({ isAffiliate=true, referrals=[], transactions=[] }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {referrals.map((referral, index) => (
+              {referrals?.map((referral, index) => (
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="py-3 px-4">
-                    <img 
-                      src={referral.profilePicture || "https://via.placeholder.com/40"} 
+                    <img
+                      src={referral.profilePicture || "https://via.placeholder.com/40"}
                       alt={referral.name}
                       className="w-10 h-10 rounded-full object-cover"
                     />
@@ -43,37 +52,36 @@ const RecentGroup = ({ isAffiliate=true, referrals=[], transactions=[] }) => {
     );
   }
 
+  const progress = recentGroup?.progress || 70;
+  const members = recentGroup?.members || 12;
+  const daysLeft = recentGroup?.daysLeft || 15;
+
   return (
-    <div className="w-[240px]"> {/* Ensures full height */}
-      {/* Top Image - Now using money image */}
+    <div className="w-[240px]">
       <div className="h-40 w-full">
-        <img 
-          src={Money} 
-          alt="Savings Group" 
+        <img
+          src={Money}
+          alt="Savings Group"
           className="w-full h-full object-cover"
         />
       </div>
-      
-      {/* Card Content */}
+
       <div className="p-3">
-        {/* Title */}
-        <h3 className="text-xl font-bold text-gray-800 mb-3">Family and Friends Savings</h3>
-        
-        {/* Progress Bar */}
+        <h3 className="text-xl font-bold text-gray-800 mb-3">{recentGroup?.name || 'Family and Friends Savings'}</h3>
+
         <div className="mb-4">
           <div className="flex justify-between items-center mb-1">
             <span className="text-sm font-medium text-gray-600">Progress</span>
             <span className="text-sm font-medium text-blue-600">{progress}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div 
-              className="bg-blue-600 h-2.5 rounded-full" 
+            <div
+              className="bg-blue-600 h-2.5 rounded-full"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
         </div>
-        
-        {/* Members and Days Left - Using react-icons instead of SVG */}
+
         <div className="flex justify-between items-center">
           <div className="flex items-center">
             <FiUsers className="w-4 h-4 text-gray-500 mr-1" />
