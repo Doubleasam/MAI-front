@@ -11,22 +11,24 @@ const axiosInstance = axios.create({
 
 // Request interceptor
 axiosInstance.interceptors.request.use(config => {
-  // Add any auth tokens here if needed
+  console.log('Request being sent to:', config.url);
   return config;
 }, error => {
+  console.error('Request error:', error);
   return Promise.reject(error);
 });
 
 // Response interceptor
 axiosInstance.interceptors.response.use(response => {
+  console.log('Response received:', response.status, response.data);
   return response;
 }, error => {
   if (error.response) {
-    console.error("Backend error:", error.response.status, error.response.data);
+    console.error('Backend error:', error.response.status, error.response.data);
   } else if (error.request) {
-    console.error("No response received:", error.request);
+    console.error('No response received:', error.request);
   } else {
-    console.error("Request error:", error.message);
+    console.error('Request setup error:', error.message);
   }
   return Promise.reject(error);
 });
