@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FiArrowLeft, FiShare2, FiCopy, FiUserPlus, FiUpload, FiX } from 'react-icons/fi';
 import useGroupStore from '../Store/group';
 import {useNavigate} from 'react-router-dom';
+import axios from '../Api/axios';
 const GroupCreationFlow = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [groupData, setGroupData] = useState({
@@ -87,25 +88,42 @@ const GroupCreationFlow = () => {
 
   const handleCreateGroup = async () => {
     try {
+      setError('');
+  
       const formData = new FormData();
       formData.append('name', groupData.name);
-      formData.append('description', groupData.description);
+      formData.append('description', groupData.description || '');
       formData.append('savingsAmount', groupData.amount);
       formData.append('frequency', groupData.frequency);
       formData.append('maxMembers', groupData.memberLimit);
-      formData.append('payoutDate', groupData.payoutDate);
-
+      formData.append('privacy', 'public'); // Default to public
+      formData.append('inviteCode', groupData.inviteCode);
+      
       if (groupData.profilePicture) {
         formData.append('image', groupData.profilePicture);
       }
-
-      await createGroup(formData);
-      navigate(`/groups/${groupData.inviteCode}`);
+  
+      const response = await axios.post('/api/group/createGroup', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+  
+      if (response.data.success) {
+        setCurrentStep(5); // Show success step
+      } else {
+        setError(response.data.message || 'Failed to create group');
+      }
     } catch (err) {
-      setError(err.message || 'Failed to create group');
+      console.error('Create group error:', err);
+      setError(
+        err.response?.data?.message || 
+        err.message || 
+        'Failed to create group. Please try again.'
+      );
     }
   };
-
 
   // Step 1: Create or Join Group
   if (currentStep === 1) {

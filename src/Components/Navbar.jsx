@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import { FiSun, FiMoon, FiBell, FiMenu } from 'react-icons/fi';
 import { FaUserCircle } from 'react-icons/fa';
 import useAuthStore from '../Store/Auth';
-
+import useThemeStore from '../Store/useThemeStore';
 const Navbar = () => {
-  const [darkMode, setDarkMode] = useState(false);
+  const { darkMode, toggleDarkMode } = useThemeStore();
   const [notifications] = useState(5);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
@@ -30,16 +30,21 @@ const Navbar = () => {
     };
   }, []);
 
-  const handleLogout = () => {
-    logout();
-    setShowDropdown(false);
-    navigate('/signIn'); // Navigate to home page after logout
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setShowDropdown(false);
+      navigate('/signIn'); // Navigate after successful logout
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Still navigate even if logout API call fails
+      navigate('/signIn');
+    }
   };
 
   return (
-    <div className={`fixed top-0 left-[276px] right-0 h-16 flex items-center ${
-      darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'
-    } shadow-sm z-40 border-b border-gray-200 px-4`}>
+    <div className={`fixed top-0 left-[276px] right-0 h-16 flex items-center ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'
+      } shadow-sm z-40 border-b border-gray-200 px-4`}>
 
       {/* Left-aligned Hamburger Button */}
       <button
@@ -54,7 +59,7 @@ const Navbar = () => {
       {/* Right-aligned Icons */}
       <div className="flex items-center gap-4 sm:gap-5">
         <button
-          onClick={() => setDarkMode(!darkMode)}
+          onClick={toggleDarkMode}
           className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
           aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
         >
@@ -76,7 +81,7 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center relative" ref={dropdownRef}>
-          <div 
+          <div
             className="flex items-center cursor-pointer"
             onClick={() => setShowDropdown(!showDropdown)}
           >

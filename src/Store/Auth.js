@@ -148,11 +148,11 @@ const useAuthStore = create(
           if (retryCount > 0) {
             await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
           }
-          
+
           const response = await axios.post('/api/auth/login/otp/initiate', { phoneNumber }, {
             _retryCount: retryCount
           });
-          
+
           set({
             otpData: {
               phone: phoneNumber,
@@ -168,12 +168,12 @@ const useAuthStore = create(
             error: error.response?.data?.message || 'Failed to initiate OTP login',
             loading: false
           });
-          
+
           // Auto-retry for network errors
           if (!error.response && retryCount < 3) {
             return get().initiateLoginWithOTP(phoneNumber, retryCount + 1);
           }
-          
+
           throw error;
         }
       },
@@ -184,7 +184,7 @@ const useAuthStore = create(
           if (retryCount > 0) {
             await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
           }
-          
+
           const response = await axios.post('/api/auth/login/otp/verify', {
             phoneNumber,
             otp
@@ -215,12 +215,12 @@ const useAuthStore = create(
             error: error.response?.data?.message || 'OTP verification failed',
             loading: false
           });
-          
+
           // Auto-retry for network errors
           if (!error.response && retryCount < 3) {
             return get().verifyLoginWithOTP(phoneNumber, otp, retryCount + 1);
           }
-          
+
           throw error;
         }
       },
@@ -232,7 +232,7 @@ const useAuthStore = create(
             _retryCount: credentials._retryCount || 0
           });
           const responseData = response.data?.data || response.data;
-          
+
           if (responseData.requiresPinVerification) {
             set({
               tempUser: {
@@ -257,7 +257,7 @@ const useAuthStore = create(
               refreshToken: responseData.refreshToken,
               loading: false
             });
-            
+
             if (credentials.rememberMe) {
               localStorage.setItem('accessToken', responseData.accessToken);
               localStorage.setItem('refreshToken', responseData.refreshToken);
@@ -267,7 +267,7 @@ const useAuthStore = create(
         } catch (error) {
           let errorMessage = 'Login failed';
           if (error.response) {
-            switch(error.response.status) {
+            switch (error.response.status) {
               case 400:
                 errorMessage = error.response.data?.message || 'Invalid email or password';
                 break;
@@ -286,10 +286,10 @@ const useAuthStore = create(
           } else if (error.request) {
             errorMessage = 'No response from server';
           }
-          
-          set({ 
+
+          set({
             error: errorMessage,
-            loading: false 
+            loading: false
           });
           throw new Error(errorMessage);
         }
@@ -299,27 +299,42 @@ const useAuthStore = create(
         set({ loading: true, error: null });
         try {
           const { refreshToken } = get();
-          await axios.post('/api/auth/logout', {}, {
-            headers: {
-              Authorization: `Bearer ${refreshToken}`
-            }
-          });
-          
+          // Only attempt logout if we have a refresh token
+          if (refreshToken) {
+            await axios.post('/api/auth/logout', {}, {
+              headers: {
+                Authorization: `Bearer ${refreshToken}`
+              }
+            });
+          }
+
+          // Clear localStorage
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
-          
+
+          // Clear sessionStorage if used
+          sessionStorage.clear();
+
+          // Reset all state
           set({
             user: null,
             accessToken: null,
             refreshToken: null,
             loading: false,
+            error: null,
             otpData: null,
             tempUser: null
           });
+
+          // Clear persisted storage
+          const persistor = useAuthStore.persist;
+          await persistor.clearStorage();
+
         } catch (error) {
+          // Even if logout fails, clear everything
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
-          
+
           set({
             user: null,
             accessToken: null,
@@ -328,17 +343,21 @@ const useAuthStore = create(
             otpData: null,
             tempUser: null
           });
+
+          const persistor = useAuthStore.persist;
+          await persistor.clearStorage();
+
           throw error;
         }
       },
 
       // Token Management
-      refreshToken: async () => {
+      refreshAccessToken: async () => {
         set({ loading: true, error: null });
         try {
           const { refreshToken } = get();
           const response = await axios.post('/api/auth/token/refresh', { refreshToken });
-          
+
           set({
             accessToken: response.data.accessToken,
             loading: false
@@ -354,10 +373,20 @@ const useAuthStore = create(
       },
 
       // Password Management
-      requestPasswordReset: async (phoneNumber) => {
+      // In your useAuthStore implementation:
+
+      // Password Management
+      requestPasswordReset: async (phoneNumber, retryCount = 0) => {
         set({ loading: true, error: null });
         try {
-          const response = await axios.post('/api/auth/password/reset/request', { phoneNumber });
+          if (retryCount > 0) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+          }
+
+          const response = await axios.post('/api/auth/password/reset/request', { phoneNumber }, {
+            _retryCount: retryCount
+          });
+
           set({
             otpData: {
               phone: phoneNumber,
@@ -369,29 +398,73 @@ const useAuthStore = create(
           });
           return response.data;
         } catch (error) {
+          let errorMessage = 'Failed to request password reset';
+
+          if (error.response) {
+            if (error.response.status === 404) {
+              errorMessage = 'No account found with this phone number';
+            } else {
+              errorMessage = error.response.data?.message || errorMessage;
+            }
+          }
+
           set({
-            error: error.response?.data?.message || 'Password reset request failed',
+            error: errorMessage,
             loading: false
           });
+
+          // Auto-retry for network errors
+          if (!error.response && retryCount < 3) {
+            return get().requestPasswordReset(phoneNumber, retryCount + 1);
+          }
+
           throw error;
         }
       },
 
-      resetPassword: async (phoneNumber, otp, newPassword) => {
+      resetPassword: async (phoneNumber, otp, newPassword, retryCount = 0) => {
         set({ loading: true, error: null });
         try {
+          if (retryCount > 0) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+          }
+
           const response = await axios.post('/api/auth/password/reset', {
             phoneNumber,
             otp,
             newPassword
+          }, {
+            _retryCount: retryCount
           });
+
           set({ loading: false });
           return response.data;
         } catch (error) {
+          let errorMessage = 'Password reset failed';
+
+          if (error.response) {
+            switch (error.response.status) {
+              case 400:
+                errorMessage = error.response.data?.message || 'Invalid OTP or password requirements not met';
+                break;
+              case 401:
+                errorMessage = 'OTP expired or invalid';
+                break;
+              default:
+                errorMessage = error.response.data?.message || errorMessage;
+            }
+          }
+
           set({
-            error: error.response?.data?.message || 'Password reset failed',
+            error: errorMessage,
             loading: false
           });
+
+          // Auto-retry for network errors
+          if (!error.response && retryCount < 3) {
+            return get().resetPassword(phoneNumber, otp, newPassword, retryCount + 1);
+          }
+
           throw error;
         }
       },
@@ -430,7 +503,7 @@ const useAuthStore = create(
               Authorization: `Bearer ${accessToken}`
             }
           });
-          
+
           set(state => ({
             user: {
               ...state.user,
@@ -438,7 +511,7 @@ const useAuthStore = create(
             },
             loading: false
           }));
-          
+
           return response.data;
         } catch (error) {
           set({
@@ -457,7 +530,7 @@ const useAuthStore = create(
           if (!otpData) throw new Error('No OTP data found');
 
           let endpoint, payload;
-          switch(otpData.purpose) {
+          switch (otpData.purpose) {
             case 'signup':
               endpoint = '/api/auth/signup/resend-otp';
               payload = { phoneNumber: otpData.phone, otpId: otpData.otpId };
@@ -532,30 +605,30 @@ axios.defaults.retryDelay = 1000;
 
 axios.interceptors.response.use(undefined, (err) => {
   const config = err.config;
-  
+
   // If config doesn't exist or retry option is not set, reject
   if (!config || !config.retry) {
     return Promise.reject(err);
   }
-  
+
   // Set variable for keeping track of retry count
   config.__retryCount = config.__retryCount || 0;
-  
+
   // Check if we've maxed out the total number of retries
   if (config.__retryCount >= config.retry) {
     return Promise.reject(err);
   }
-  
+
   // Increase the retry count
   config.__retryCount += 1;
-  
+
   // Create new promise to handle exponential backoff
   const backoff = new Promise((resolve) => {
     setTimeout(() => {
       resolve();
     }, config.retryDelay || 1);
   });
-  
+
   // Return the promise in which recalls axios to retry the request
   return backoff.then(() => {
     return axios(config);
@@ -575,7 +648,7 @@ axios.interceptors.response.use(
 
       try {
         if (!refreshPromise) {
-          refreshPromise = useAuthStore.getState().refreshToken()
+          refreshPromise = useAuthStore.getState().refreshAccessToken()
             .finally(() => { refreshPromise = null; });
         }
         await refreshPromise;
@@ -599,12 +672,12 @@ axios.interceptors.request.use(
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
-    
+
     // Add timestamp to avoid caching
     if (config.method === 'get') {
       config.params = { ...config.params, _t: Date.now() };
     }
-    
+
     return config;
   },
   (error) => Promise.reject(error)

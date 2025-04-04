@@ -14,7 +14,6 @@ const useGroupStore = create(
       loading: false,
       error: null,
       successMessage: null,
-
       // Helper to clear messages
       _clearMessages: () => {
         setTimeout(() => set({ error: null, successMessage: null }), 5000);
@@ -56,7 +55,7 @@ const useGroupStore = create(
         try {
           const response = await axios.get('/api/group');
           set({ 
-            groups: response.data,
+            groups: response.data.data,
             loading: false 
           });
           return response.data;

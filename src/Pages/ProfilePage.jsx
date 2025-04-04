@@ -4,10 +4,10 @@ import {
   FiUpload, FiEye, FiEyeOff, FiArrowDownLeft, 
   FiArrowUpRight, FiCreditCard, FiPlus 
 } from "react-icons/fi";
-import useAuthStore from "../Store/Auth"; // Update this path to your auth store location
+import useAuthStore from "../Store/Auth";
 
 const ProfilePage = () => {
-  const { user, updateProfile } = useAuthStore();
+  const { user, updateProfile, logout } = useAuthStore();
   const [activeTab, setActiveTab] = useState("profile");
   const [bankDetails, setBankDetails] = useState({
     bankName: "",
@@ -18,17 +18,22 @@ const ProfilePage = () => {
   });
   const [showBankForm, setShowBankForm] = useState(false);
   const [profileData, setProfileData] = useState({
-    username: user?.username || "",
-    phoneNumber: user?.phoneNumber || "",
-    email: user?.email || "",
-    firstName: user?.firstName || "",
-    lastName: user?.lastName || "",
-    avatar: user?.avatar || "https://via.placeholder.com/150"
+    username: "",
+    phoneNumber: "",
+    email: "",
+    firstName: "",
+    lastName: "",
+    avatar: "https://via.placeholder.com/150"
   });
   const [showPassword, setShowPassword] = useState({
     current: false,
     new: false,
     confirm: false
+  });
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: ""
   });
   const [darkMode, setDarkMode] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -43,7 +48,11 @@ const ProfilePage = () => {
     name: ''
   });
   const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
+  // Initialize profile data from user
   useEffect(() => {
     if (user) {
       setProfileData({
@@ -57,6 +66,7 @@ const ProfilePage = () => {
     }
   }, [user]);
 
+  // Load saved settings from localStorage
   useEffect(() => {
     const savedBankDetails = localStorage.getItem('bankDetails');
     const savedDarkMode = localStorage.getItem('darkMode');
@@ -65,6 +75,7 @@ const ProfilePage = () => {
     if (savedDarkMode) setDarkMode(savedDarkMode === 'true');
   }, []);
 
+  // Apply dark mode
   useEffect(() => {
     if (darkMode) {
       document.body.classList.add('dark');
@@ -90,6 +101,14 @@ const ProfilePage = () => {
     }));
   };
 
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -103,21 +122,26 @@ const ProfilePage = () => {
   };
 
   const uploadAvatar = async () => {
-    if (selectedFile) {
-      try {
-        const formData = new FormData();
-        formData.append('avatar', selectedFile);
-        
-        await updateProfile(formData);
-        
-        setProfileData(prev => ({
-          ...prev,
-          avatar: previewImage
-        }));
-        alert("Profile picture updated successfully!");
-      } catch (error) {
-        alert("Failed to update profile picture");
-      }
+    if (!selectedFile) return;
+    
+    setLoading(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append('avatar', selectedFile);
+      
+      await updateProfile(formData);
+      
+      setProfileData(prev => ({
+        ...prev,
+        avatar: previewImage
+      }));
+      setSuccess("Profile picture updated successfully!");
+    } catch (error) {
+      setError(error.message || "Failed to update profile picture");
+    } finally {
+      setLoading(false);
+      setTimeout(() => setSuccess(null), 3000);
     }
   };
 
@@ -127,10 +151,13 @@ const ProfilePage = () => {
     setBankDetails(updatedDetails);
     localStorage.setItem('bankDetails', JSON.stringify(updatedDetails));
     setShowBankForm(false);
-    alert("Bank details submitted for verification!");
+    setSuccess("Bank details submitted for verification!");
+    setTimeout(() => setSuccess(null), 3000);
   };
 
   const saveProfileChanges = async () => {
+    setLoading(true);
+    setError(null);
     try {
       await updateProfile({
         firstName: profileData.firstName,
@@ -139,10 +166,43 @@ const ProfilePage = () => {
         username: profileData.username
       });
       
-      localStorage.setItem('profileData', JSON.stringify(profileData));
-      alert("Profile changes saved!");
+      setSuccess("Profile changes saved!");
     } catch (error) {
-      alert("Failed to update profile");
+      setError(error.message || "Failed to update profile");
+    } finally {
+      setLoading(false);
+      setTimeout(() => setSuccess(null), 3000);
+    }
+  };
+
+  const updatePassword = async (e) => {
+    e.preventDefault();
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setError("New passwords don't match");
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    try {
+      await updateProfile({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+      
+      setSuccess("Password updated successfully!");
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+      });
+    } catch (error) {
+      setError(error.message || "Failed to update password");
+    } finally {
+      setLoading(false);
+      setTimeout(() => setSuccess(null), 3000);
     }
   };
 
@@ -185,7 +245,7 @@ const ProfilePage = () => {
 
   const handleAddCard = (e) => {
     e.preventDefault();
-    alert('Card added successfully!');
+    setSuccess('Card added successfully!');
     setShowAddCardModal(false);
     setCardDetails({
       cardNumber: '',
@@ -193,17 +253,47 @@ const ProfilePage = () => {
       cvv: '',
       name: ''
     });
+    setTimeout(() => setSuccess(null), 3000);
   };
 
   const handleWithdraw = (e) => {
     e.preventDefault();
-    alert(`Withdrawal request for $${withdrawAmount} submitted!`);
+    setSuccess(`Withdrawal request for $${withdrawAmount} submitted!`);
     setShowWithdrawModal(false);
     setWithdrawAmount('');
+    setTimeout(() => setSuccess(null), 3000);
   };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      window.location.href = '/login';
+    } catch (error) {
+      setError(error.message || "Failed to logout");
+      setTimeout(() => setError(null), 3000);
+    }
+  };
+
+  // Display error/success messages
+  useEffect(() => {
+    if (error || success) {
+      const timer = setTimeout(() => {
+        setError(null);
+        setSuccess(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, success]);
 
   return (
     <div className={`flex min-h-screen px-4 md:px-6 ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100'}`}>
+      {/* Notification messages */}
+      {(error || success) && (
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${error ? 'bg-red-500' : 'bg-green-500'} text-white`}>
+          {error || success}
+        </div>
+      )}
+
       {/* Sidebar */}
       <aside className={`w-full md:w-1/3 p-2 md:p-3 rounded-lg shadow-md ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
         {/* User Profile */}
@@ -303,6 +393,12 @@ const ProfilePage = () => {
             <li className={`cursor-pointer hover:text-blue-500 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
               FAQ
             </li>
+            <li 
+              className={`cursor-pointer hover:text-red-500 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
+              onClick={handleLogout}
+            >
+              Logout
+            </li>
           </ul>
         </nav>
       </aside>
@@ -335,8 +431,9 @@ const ProfilePage = () => {
                   <button
                     className="mt-2 text-sm bg-blue-500 text-white px-3 py-1 rounded"
                     onClick={uploadAvatar}
+                    disabled={loading}
                   >
-                    Save Photo
+                    {loading ? 'Uploading...' : 'Save Photo'}
                   </button>
                 )}
               </div>
@@ -363,18 +460,6 @@ const ProfilePage = () => {
                   type="text"
                   name="lastName"
                   value={profileData.lastName}
-                  onChange={handleProfileChange}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-200 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
-                />
-              </div>
-
-              {/* Username Field */}
-              <div>
-                <label className={`block mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Username</label>
-                <input
-                  type="text"
-                  name="username"
-                  value={profileData.username}
                   onChange={handleProfileChange}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-200 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
                 />
@@ -412,8 +497,9 @@ const ProfilePage = () => {
               <button
                 className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition mt-6"
                 onClick={saveProfileChanges}
+                disabled={loading}
               >
-                Save Changes
+                {loading ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </>
@@ -520,8 +606,9 @@ const ProfilePage = () => {
                   <button
                     type="submit"
                     className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition"
+                    disabled={loading}
                   >
-                    Save Bank Details
+                    {loading ? 'Saving...' : 'Save Bank Details'}
                   </button>
                   {bankDetails.bankName && (
                     <button
@@ -544,56 +631,77 @@ const ProfilePage = () => {
             <div className="max-w-md mx-auto space-y-6">
               <div className={`p-6 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                 <h3 className="font-medium mb-4">Change Password</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className={`block mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Current Password</label>
-                    <div className="relative">
-                      <input
-                        type={showPassword.current ? "text" : "password"}
-                        className={`w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-200 ${darkMode ? 'bg-gray-600 border-gray-500 text-white' : ''}`}
-                      />
-                      <button
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                        onClick={() => togglePasswordVisibility('current')}
-                      >
-                        {showPassword.current ? <FiEyeOff /> : <FiEye />}
-                      </button>
+                <form onSubmit={updatePassword}>
+                  <div className="space-y-4">
+                    <div>
+                      <label className={`block mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Current Password</label>
+                      <div className="relative">
+                        <input
+                          type={showPassword.current ? "text" : "password"}
+                          name="currentPassword"
+                          value={passwordData.currentPassword}
+                          onChange={handlePasswordChange}
+                          className={`w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-200 ${darkMode ? 'bg-gray-600 border-gray-500 text-white' : ''}`}
+                          required
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                          onClick={() => togglePasswordVisibility('current')}
+                        >
+                          {showPassword.current ? <FiEyeOff /> : <FiEye />}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <label className={`block mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>New Password</label>
-                    <div className="relative">
-                      <input
-                        type={showPassword.new ? "text" : "password"}
-                        className={`w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-200 ${darkMode ? 'bg-gray-600 border-gray-500 text-white' : ''}`}
-                      />
-                      <button
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                        onClick={() => togglePasswordVisibility('new')}
-                      >
-                        {showPassword.new ? <FiEyeOff /> : <FiEye />}
-                      </button>
+                    <div>
+                      <label className={`block mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>New Password</label>
+                      <div className="relative">
+                        <input
+                          type={showPassword.new ? "text" : "password"}
+                          name="newPassword"
+                          value={passwordData.newPassword}
+                          onChange={handlePasswordChange}
+                          className={`w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-200 ${darkMode ? 'bg-gray-600 border-gray-500 text-white' : ''}`}
+                          required
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                          onClick={() => togglePasswordVisibility('new')}
+                        >
+                          {showPassword.new ? <FiEyeOff /> : <FiEye />}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <label className={`block mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Confirm New Password</label>
-                    <div className="relative">
-                      <input
-                        type={showPassword.confirm ? "text" : "password"}
-                        className={`w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-200 ${darkMode ? 'bg-gray-600 border-gray-500 text-white' : ''}`}
-                      />
-                      <button
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                        onClick={() => togglePasswordVisibility('confirm')}
-                      >
-                        {showPassword.confirm ? <FiEyeOff /> : <FiEye />}
-                      </button>
+                    <div>
+                      <label className={`block mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Confirm New Password</label>
+                      <div className="relative">
+                        <input
+                          type={showPassword.confirm ? "text" : "password"}
+                          name="confirmPassword"
+                          value={passwordData.confirmPassword}
+                          onChange={handlePasswordChange}
+                          className={`w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-200 ${darkMode ? 'bg-gray-600 border-gray-500 text-white' : ''}`}
+                          required
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                          onClick={() => togglePasswordVisibility('confirm')}
+                        >
+                          {showPassword.confirm ? <FiEyeOff /> : <FiEye />}
+                        </button>
+                      </div>
                     </div>
+                    <button 
+                      type="submit"
+                      className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition"
+                      disabled={loading}
+                    >
+                      {loading ? 'Updating...' : 'Update Password'}
+                    </button>
                   </div>
-                  <button className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition">
-                    Update Password
-                  </button>
-                </div>
+                </form>
               </div>
 
               <div className={`p-6 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
@@ -680,7 +788,6 @@ const ProfilePage = () => {
             </div>
           </div>
         )}
-
         {activeTab === "wallet" && (
           <div>
             <h2 className="text-xl font-semibold mb-6">Wallet</h2>
