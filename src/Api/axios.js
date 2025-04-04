@@ -9,31 +9,26 @@ const axiosInstance = axios.create({
   }
 });
 
-// Add request interceptor to handle errors
-axiosInstance.interceptors.request.use(
-  config => {
-    // You can add auth tokens here if needed
-    return config;
-  },
-  error => {
-    return Promise.reject(error);
-  }
-);
+// Request interceptor
+axiosInstance.interceptors.request.use(config => {
+  // Add any auth tokens here if needed
+  return config;
+}, error => {
+  return Promise.reject(error);
+});
 
-// Add response interceptor
-axiosInstance.interceptors.response.use(
-  response => response,
-  error => {
-    if (error.response) {
-      console.error("Backend returned error status:", error.response.status);
-      console.error("Error data:", error.response.data);
-    } else if (error.request) {
-      console.error("No response received:", error.request);
-    } else {
-      console.error("Request setup error:", error.message);
-    }
-    return Promise.reject(error);
+// Response interceptor
+axiosInstance.interceptors.response.use(response => {
+  return response;
+}, error => {
+  if (error.response) {
+    console.error("Backend error:", error.response.status, error.response.data);
+  } else if (error.request) {
+    console.error("No response received:", error.request);
+  } else {
+    console.error("Request error:", error.message);
   }
-);
+  return Promise.reject(error);
+});
 
 export default axiosInstance;
