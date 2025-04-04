@@ -4,8 +4,10 @@ import {
   FiUpload, FiEye, FiEyeOff, FiArrowDownLeft, 
   FiArrowUpRight, FiCreditCard, FiPlus 
 } from "react-icons/fi";
+import useAuthStore from "../Store/Auth"; // Update this path to your auth store location
 
 const ProfilePage = () => {
+  const { user, updateProfile } = useAuthStore();
   const [activeTab, setActiveTab] = useState("profile");
   const [bankDetails, setBankDetails] = useState({
     bankName: "",
@@ -16,10 +18,12 @@ const ProfilePage = () => {
   });
   const [showBankForm, setShowBankForm] = useState(false);
   const [profileData, setProfileData] = useState({
-    username: "janedoe",
-    phoneNumber: "+234 900 7002",
-    email: "janedoe2000@gmail.com",
-    avatar: "https://via.placeholder.com/150"
+    username: user?.username || "",
+    phoneNumber: user?.phoneNumber || "",
+    email: user?.email || "",
+    firstName: user?.firstName || "",
+    lastName: user?.lastName || "",
+    avatar: user?.avatar || "https://via.placeholder.com/150"
   });
   const [showPassword, setShowPassword] = useState({
     current: false,
@@ -41,12 +45,23 @@ const ProfilePage = () => {
   const [withdrawAmount, setWithdrawAmount] = useState('');
 
   useEffect(() => {
+    if (user) {
+      setProfileData({
+        username: user.username || "",
+        phoneNumber: user.phoneNumber || "",
+        email: user.email || "",
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        avatar: user.avatar || "https://via.placeholder.com/150"
+      });
+    }
+  }, [user]);
+
+  useEffect(() => {
     const savedBankDetails = localStorage.getItem('bankDetails');
-    const savedProfile = localStorage.getItem('profileData');
     const savedDarkMode = localStorage.getItem('darkMode');
 
     if (savedBankDetails) setBankDetails(JSON.parse(savedBankDetails));
-    if (savedProfile) setProfileData(JSON.parse(savedProfile));
     if (savedDarkMode) setDarkMode(savedDarkMode === 'true');
   }, []);
 
@@ -87,13 +102,22 @@ const ProfilePage = () => {
     }
   };
 
-  const uploadAvatar = () => {
+  const uploadAvatar = async () => {
     if (selectedFile) {
-      setProfileData(prev => ({
-        ...prev,
-        avatar: previewImage
-      }));
-      alert("Profile picture updated successfully!");
+      try {
+        const formData = new FormData();
+        formData.append('avatar', selectedFile);
+        
+        await updateProfile(formData);
+        
+        setProfileData(prev => ({
+          ...prev,
+          avatar: previewImage
+        }));
+        alert("Profile picture updated successfully!");
+      } catch (error) {
+        alert("Failed to update profile picture");
+      }
     }
   };
 
@@ -106,9 +130,20 @@ const ProfilePage = () => {
     alert("Bank details submitted for verification!");
   };
 
-  const saveProfileChanges = () => {
-    localStorage.setItem('profileData', JSON.stringify(profileData));
-    alert("Profile changes saved!");
+  const saveProfileChanges = async () => {
+    try {
+      await updateProfile({
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        phoneNumber: profileData.phoneNumber,
+        username: profileData.username
+      });
+      
+      localStorage.setItem('profileData', JSON.stringify(profileData));
+      alert("Profile changes saved!");
+    } catch (error) {
+      alert("Failed to update profile");
+    }
   };
 
   const togglePasswordVisibility = (field) => {
@@ -179,7 +214,7 @@ const ProfilePage = () => {
             className="w-12 h-12 rounded-full object-cover"
           />
           <div>
-            <h2 className="text-lg font-semibold">{profileData.username}</h2>
+            <h2 className="text-lg font-semibold">{profileData.firstName || profileData.username}</h2>
             <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>{profileData.email}</p>
           </div>
           <button
@@ -309,6 +344,30 @@ const ProfilePage = () => {
 
             {/* Form */}
             <div className="max-w-md mx-auto space-y-4">
+              {/* First Name Field */}
+              <div>
+                <label className={`block mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>First Name</label>
+                <input
+                  type="text"
+                  name="firstName"
+                  value={profileData.firstName}
+                  onChange={handleProfileChange}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-200 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                />
+              </div>
+
+              {/* Last Name Field */}
+              <div>
+                <label className={`block mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Last Name</label>
+                <input
+                  type="text"
+                  name="lastName"
+                  value={profileData.lastName}
+                  onChange={handleProfileChange}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring focus:ring-blue-200 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                />
+              </div>
+
               {/* Username Field */}
               <div>
                 <label className={`block mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Username</label>

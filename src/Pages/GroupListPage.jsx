@@ -1,5 +1,6 @@
 import React from 'react';
-import { FiEye, FiMoreVertical } from 'react-icons/fi';
+import { FiEye, FiMoreVertical, FiPlus } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
 
 const GroupListTable = () => {
   // Sample group data
@@ -42,13 +43,28 @@ const GroupListTable = () => {
     }
   ];
 
+  const handleCreateGroup = () => {
+    // Add your create group logic here
+    console.log('Create new group clicked');
+    // Typically you would navigate to a create group page or open a modal
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="min-h-screen bg-gray-50   md:p-2 relative">
+      {/* Floating Create Group Button */}
+      <Link to="/groupCreation"
+
+        className="fixed bottom-8 right-8 flex items-center justify-center h-14 w-14 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 z-10"
+      >
+
+        <FiPlus className="h-6 w-6" />
+      </Link>
+
       <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
           <h1 className="text-xl font-semibold text-gray-800">Savings Groups</h1>
         </div>
-        
+
         {/* Table */}
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -86,26 +102,26 @@ const GroupListTable = () => {
                       </div>
                     </div>
                   </td>
-                  
+
                   {/* Members */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">{group.members}</div>
                   </td>
-                  
+
                   {/* Time Left */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
                       {group.timeLeft}
                     </span>
                   </td>
-                  
+
                   {/* Progress */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="w-32 mr-2">
                         <div className="w-full bg-gray-200 rounded-full h-2.5">
-                          <div 
-                            className="bg-blue-600 h-2.5 rounded-full" 
+                          <div
+                            className="bg-blue-600 h-2.5 rounded-full"
                             style={{ width: `${group.progress}%` }}
                           ></div>
                         </div>
@@ -113,27 +129,18 @@ const GroupListTable = () => {
                       <span className="text-sm font-medium text-gray-700">{group.progress}%</span>
                     </div>
                   </td>
-                  
+
                   {/* Action */}
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button className="text-blue-600 hover:text-blue-900 mr-4">
                       <FiEye className="inline mr-1" /> View
                     </button>
-                    <button className="text-gray-400 hover:text-gray-600">
-                      <FiMoreVertical />
-                    </button>
+
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
-        
-        {/* Pagination would go here */}
-        <div className="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
-          <div className="text-sm text-gray-500">
-            Showing <span className="font-medium">1</span> to <span className="font-medium">4</span> of <span className="font-medium">4</span> groups
-          </div>
         </div>
       </div>
     </div>

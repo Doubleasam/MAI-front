@@ -19,7 +19,6 @@ import {
   FiSettings
 } from 'react-icons/fi';
 import { FaCrown } from 'react-icons/fa';
-
 const ChatPage = () => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([
@@ -54,7 +53,7 @@ const ChatPage = () => {
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestMessage, setRequestMessage] = useState('');
   const [showRoleMenu, setShowRoleMenu] = useState(null);
-  const [currentUserRole, setCurrentUserRole] = useState('member'); // Simulate current user's role
+  const [currentUserRole, setCurrentUserRole] = useState('admin'); // Set to admin for testing
 
   const handleSendMessage = () => {
     if (message.trim()) {
@@ -102,14 +101,12 @@ const ChatPage = () => {
   };
 
   const confirmSendRequest = () => {
-    // Update member statuses (for demo purposes)
     setMembers(members.map(member => 
       selectedUsers.includes(member.id) && member.status === 'non-member' 
         ? { ...member, status: 'pending' } 
         : member
     ));
     
-    // Add activity notification
     const newActivity = {
       id: activities.length + 1,
       text: `You sent group invitations to ${selectedUsers.length} ${selectedUsers.length > 1 ? 'members' : 'member'}`,
@@ -117,7 +114,6 @@ const ChatPage = () => {
     };
     setActivities([newActivity, ...activities]);
     
-    // Reset state
     setSelectedUsers([]);
     setRequestMessage('');
     setShowRequestModal(false);
@@ -131,7 +127,6 @@ const ChatPage = () => {
     ));
     setShowRoleMenu(null);
     
-    // Add activity notification
     const user = members.find(m => m.id === userId);
     const newActivity = {
       id: activities.length + 1,
@@ -372,11 +367,15 @@ const ChatPage = () => {
                   <div 
                     key={member.id} 
                     className={`flex items-center justify-between p-2 rounded-lg ${selectedUsers.includes(member.id) ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
+                    onClick={() => setShowRoleMenu(null)}
                   >
                     <div className="flex items-center space-x-3 flex-1">
                       {member.status === 'non-member' && (
                         <button 
-                          onClick={() => toggleUserSelection(member.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleUserSelection(member.id);
+                          }}
                           className={`w-5 h-5 rounded border ${selectedUsers.includes(member.id) ? 'bg-blue-500 border-blue-500 text-white' : 'border-gray-300'}`}
                         >
                           {selectedUsers.includes(member.id) && <FiCheck size={14} className="mx-auto" />}
@@ -407,34 +406,49 @@ const ChatPage = () => {
                       {member.status === 'member' && canChangeRoles && (
                         <div className="relative">
                           <button 
-                            onClick={() => setShowRoleMenu(showRoleMenu === member.id ? null : member.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowRoleMenu(showRoleMenu === member.id ? null : member.id);
+                            }}
                             className="text-gray-400 hover:text-blue-500"
                           >
                             <FiSettings size={16} />
                           </button>
                           {showRoleMenu === member.id && (
-                            <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg py-1 z-10 border border-gray-200">
+                            <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
                               <button
-                                onClick={() => changeUserRole(member.id, 'admin')}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  changeUserRole(member.id, 'admin');
+                                }}
                                 className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                               >
                                 <FiCrown className="mr-2 text-purple-500" size={14} /> Make Admin
                               </button>
                               <button
-                                onClick={() => changeUserRole(member.id, 'moderator')}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  changeUserRole(member.id, 'moderator');
+                                }}
                                 className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                               >
                                 <FiShield className="mr-2 text-blue-500" size={14} /> Make Moderator
                               </button>
                               <button
-                                onClick={() => changeUserRole(member.id, 'member')}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  changeUserRole(member.id, 'member');
+                                }}
                                 className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                               >
                                 <FiUserCheck className="mr-2 text-gray-500" size={14} /> Make Member
                               </button>
                               {member.role === 'admin' && currentUserRole === 'admin' && (
                                 <button
-                                  onClick={() => changeUserRole(member.id, '')}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    changeUserRole(member.id, 'member');
+                                  }}
                                   className="flex items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left border-t border-gray-200"
                                 >
                                   <FiX className="mr-2" size={14} /> Remove Admin
@@ -444,12 +458,18 @@ const ChatPage = () => {
                           )}
                         </div>
                       )}
-                      <button className="text-gray-400 hover:text-blue-500">
+                      <button 
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-gray-400 hover:text-blue-500"
+                      >
                         <FiCopy size={16} />
                       </button>
                       {member.status === 'non-member' && (
                         <button 
-                          onClick={() => toggleUserSelection(member.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleUserSelection(member.id);
+                          }}
                           className="text-gray-400 hover:text-green-500"
                         >
                           <FiUserPlus size={16} />

@@ -1,14 +1,23 @@
 import React, { useState } from 'react';
 import { IoIosArrowForward } from 'react-icons/io';
 import { FiCopy, FiEye, FiEyeOff } from 'react-icons/fi';
+import useAuthStore from '../Store/Auth'; // Import your auth store
 
-function DashBoard({ userRole = 'affiliate' }) {
+function DashBoard() {
   const [balanceVisible, setBalanceVisible] = useState(false);
   const [copied, setCopied] = useState(false);
+  
+  // Get user data from auth store
+  const { user } = useAuthStore();
+  const userRole = user?.role || 'user'; // Default to 'user' if role not specified
+  const firstName = user?.firstName || '';
+  const lastName = user?.lastName || '';
+  const referralCode = user?.referralCode || "KLKSDJHSHSH"; // Fallback if no referral code
+  
+  // Mock data - replace with actual data from your backend
   const profileCompletion = 75;
   const currentBalance = 0;
   const totalReferrals = 38;
-  const referralCode = "KLKSDJHSHSH";
 
   const toggleBalanceVisibility = () => {
     setBalanceVisible(!balanceVisible);
@@ -23,7 +32,7 @@ function DashBoard({ userRole = 'affiliate' }) {
   return (
     <div className="w-[660px] h-max p-3">
       <h1 className="text-3xl font-bold text-gray-800 mb-2">Dashboard</h1>
-      <p className="text-gray-600 mb-6">Welcome Back, Adeniyi Tosin</p>
+      <p className="text-gray-600 mb-6">Welcome Back, {firstName} {lastName}</p>
       
       {/* Current Balance Card - Shown for all users */}
       <div className="bg-black text-white p-6 rounded-lg shadow-md mb-6">
@@ -58,7 +67,6 @@ function DashBoard({ userRole = 'affiliate' }) {
             <p className="text-gray-300 text-sm">Please setup bank details to complete your profile</p>
           </div>
         )}
-
       </div>
 
       {/* Affiliate Section - Only shown for affiliate users */}

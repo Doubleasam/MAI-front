@@ -13,9 +13,12 @@ import {
   FiFileText
 } from 'react-icons/fi';
 import { IoMdPerson } from 'react-icons/io';
+import useAuthStore from '../Store/Auth'; // Import your auth store
 
-function Sidebar() { // Accept userRole as prop
- const userRole="affiliate"
+function Sidebar() {
+  // Get user data from auth store
+  const { user } = useAuthStore();
+  const userRole = user?.role || 'user'; // Default to 'user' if role not specified
   const isAffiliate = userRole === 'affiliate';
 
   return (
@@ -31,7 +34,7 @@ function Sidebar() { // Accept userRole as prop
           // Affiliate Navigation
           <>
             <NavItem to="/dashboard" icon={<FiHome size={20} />} text="Home" />
-            <NavItem to="/refearals" icon={<FiUsers size={20} />} text="Referrals" />
+            <NavItem to="/referrals" icon={<FiUsers size={20} />} text="Referrals" />
             <NavItem to="/notification" icon={<FiBell size={20} />} text="Notifications" />
             <NavItem to="/profile" icon={<IoMdPerson size={20} />} text="Profile" />
           </>
@@ -39,7 +42,7 @@ function Sidebar() { // Accept userRole as prop
           // Regular User Navigation
           <>
             <NavItem to="/dashboard" icon={<FiHome size={20} />} text="Home" />
-            <NavItem to="/groups" icon={<FiUsers size={20} />} text="Groups" />
+            <NavItem to="/group" icon={<FiUsers size={20} />} text="Groups" />
             <NavItem to="/notification" icon={<FiBell size={20} />} text="Notifications" />
             <NavItem to="/profile" icon={<FiUser size={20} />} text="Profile" />
           </>
@@ -62,6 +65,7 @@ const NavItem = ({ to, icon, text }) => (
         'bg-indigo-50 text-indigo-600 font-medium' : 
         'text-gray-600 hover:bg-gray-50'}`
     }
+    end
   >
     <span className="flex-shrink-0">{icon}</span>
     <span className="ml-3 text-sm">{text}</span>

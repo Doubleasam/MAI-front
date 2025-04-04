@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Family from "../assets/Family.jpeg";
+import useAuthStore from '../Store/Auth';
 
 const CreatePin = () => {
-  const [step, setStep] = useState(1); // 1 = Create PIN, 2 = Confirm PIN
+  const [step, setStep] = useState(1);
   const [pin, setPin] = useState(['', '', '', '']);
   const [confirmPin, setConfirmPin] = useState(['', '', '', '']);
+  const { createPin, loading, error, clearError } = useAuthStore();
+  const navigate = useNavigate();
 
   const handlePinChange = (e, index) => {
     const value = e.target.value;
@@ -15,7 +18,6 @@ const CreatePin = () => {
     newPin[index] = value;
     setPin(newPin);
 
-    // Auto focus to next input
     if (value && index < 3) {
       document.getElementById(`pin-${index + 1}`).focus();
     }
@@ -29,38 +31,38 @@ const CreatePin = () => {
     newConfirmPin[index] = value;
     setConfirmPin(newConfirmPin);
 
-    // Auto focus to next input
     if (value && index < 3) {
       document.getElementById(`confirm-pin-${index + 1}`).focus();
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    clearError();
     
     if (step === 1) {
       setStep(2);
-      // Clear confirm PIN when moving to step 2
       setConfirmPin(['', '', '', '']);
       return;
     }
 
-    // Verify PINs match
     if (pin.join('') !== confirmPin.join('')) {
       alert("PINs don't match!");
       return;
     }
 
-    console.log('PIN created:', pin.join(''));
-    // Add your PIN creation logic here
+    try {
+      await createPin(pin.join(''));
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('PIN creation error:', error);
+    }
   };
 
   return (
     <div className="h-screen flex overflow-hidden">
-      {/* Left Column - PIN Form */}
       <div className="w-full md:w-1/2 bg-gray-50 flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md">
-          {/* Header Section */}
           <div className="mb-6 text-center">
             <h2 className="text-[34px] font-bold text-[#1E1E1E]">
               {step === 1 ? 'Create PIN' : 'Confirm PIN'}
@@ -72,10 +74,14 @@ const CreatePin = () => {
             </p>
           </div>
 
-          {/* PIN Form Section */}
+          {error && (
+            <div className="mb-3 p-2 bg-red-100 text-red-700 rounded text-sm">
+              {error}
+            </div>
+          )}
+
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* PIN Inputs */}
               <div className="flex justify-center space-x-4">
                 {[0, 1, 2, 3].map((index) => (
                   <input
@@ -92,19 +98,23 @@ const CreatePin = () => {
                 ))}
               </div>
 
-              {/* Action Button */}
               <button
                 type="submit"
-                className="w-full py-3 px-4 bg-indigo-600 text-white text-[16px] font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                disabled={loading || (step === 2 && confirmPin.some(digit => !digit))}
+                className={`w-full py-3 px-4 text-white text-[16px] font-medium rounded-md ${
+                  loading ? 'bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-700'
+                }`}
               >
-                {step === 1 ? 'Continue' : 'Confirm PIN'}
+                {loading 
+                  ? 'Processing...' 
+                  : step === 1 ? 'Continue' : 'Confirm PIN'}
               </button>
 
-              {/* Back link when confirming */}
               {step === 2 && (
                 <button
                   type="button"
                   onClick={() => setStep(1)}
+                  disabled={loading}
                   className="w-full text-center text-indigo-600 hover:text-indigo-500 text-[16px] font-medium"
                 >
                   Back to create PIN
@@ -115,7 +125,6 @@ const CreatePin = () => {
         </div>
       </div>
 
-      {/* Right Column - Image */}
       <div className="hidden md:flex md:w-1/2 relative">
         <img
           src={Family}
