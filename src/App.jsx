@@ -11,7 +11,7 @@ import Layout from './Components/Layout';
 import DashboardLayout from './Components/DashboardLayout';
 import AffiliateRegistration from './Components/AffilateUser/AffiliateRegistration';
 import Referrals from './Pages/Referals';
-import ProfilePage from './Pages/ProfilePage';
+import ProfilePage from './Components//profile/ProfilePage';
 import GroupCreationFlow from './Pages/GroupCreationFlow';
 import GroupListPage from './Pages/GroupListPage';
 import ChatPage from './Components/ChatPage';
@@ -34,11 +34,10 @@ const PublicRoute = () => {
 
 function App() {
   return (
-
     <Routes>
       {/* Public routes (only accessible when logged out) */}
       <Route element={<PublicRoute />}>
-      <Route path='/' element={<HomePage />} />
+        <Route path='/' element={<HomePage />} />
         <Route path="/signIn" element={<SignIn />} />
         <Route path="/signup" element={<CreateAccount />} />
         <Route path="/otp" element={<OtpVerification />} />
@@ -58,7 +57,10 @@ function App() {
           <Route path="/group" element={<GroupListTable />} />
           <Route path="/groupList" element={<GroupListPage />} />
           <Route path="/groupCreation" element={<GroupCreationFlow />} />
-          <Route path="/chat" element={<ChatPage />} />
+          
+          {/* Chat route now has dynamic groupId */}
+          <Route path="/chat/:groupId" element={<ChatPage />} />
+          
           <Route path="/notification" element={<NotificationPage />} />
         </Route>
       </Route>
@@ -66,7 +68,6 @@ function App() {
       {/* Fallback route */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-
   );
 }
 

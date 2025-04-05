@@ -8,7 +8,11 @@ const useGroupStore = create(
       // State
       groups: [],
       currentGroup: null,
-      groupMessages: [],
+      groupMessages: {
+        success: false,
+        count: 0,
+        data: []
+      },
       payoutHistory: [],
       joinRequests: [],
       loading: false,
@@ -31,20 +35,20 @@ const useGroupStore = create(
               'Content-Type': 'multipart/form-data'
             }
           });
-          
+
           set(state => ({
             groups: [...state.groups, response.data],
             currentGroup: response.data,
             loading: false,
             successMessage: 'Group created successfully'
           }));
-          
+
           get()._clearMessages();
           return response.data;
         } catch (error) {
-          set({ 
+          set({
             error: error.response?.data?.message || 'Failed to create group',
-            loading: false 
+            loading: false
           });
           throw error;
         }
@@ -54,40 +58,59 @@ const useGroupStore = create(
         set({ loading: true });
         try {
           const response = await axios.get('/api/group');
-          set({ 
+          set({
             groups: response.data.data,
-            loading: false 
+            loading: false
           });
           return response.data;
         } catch (error) {
-          set({ 
+          set({
             error: error.response?.data?.message || 'Failed to fetch groups',
-            loading: false 
+            loading: false
           });
           throw error;
         }
       },
-
       getGroupDetails: async (groupId) => {
         set({ loading: true });
         try {
+          console.log(`Fetching group details for groupId: ${groupId}`);
+
           const response = await axios.get(`/api/group/${groupId}`);
-          const walletResponse = await axios.get(`/api/group/${groupId}/wallet`);
-          
-          set({ 
-            currentGroup: {
-              ...response.data,
-              walletBalance: walletResponse.data.balance,
-              nextPayoutAmount: response.data.savingsAmount * response.data.members.length,
-              isAdmin: response.data.admin._id === get().user?._id
-            },
-            loading: false 
-          });
-          return response.data;
+          console.log('Group details response:', response.data);
+
+          // Access the actual data within the response
+          const groupData = response.data.data;
+
+          // Ensure the response data is structured as expected
+          if (groupData && groupData._id) {
+            set({
+              currentGroup: {
+                ...groupData,
+                nextPayoutAmount: groupData.savingsAmount * groupData.members.length,
+                isAdmin: groupData.admin._id === get().user?._id
+              },
+              loading: false
+            });
+
+            // Log the updated state after a short delay to ensure it's updated
+            setTimeout(() => {
+              console.log('Updated currentGroup:', get().currentGroup);
+            }, 100);
+          } else {
+            console.error('Unexpected response structure:', response.data);
+            set({
+              error: 'Unexpected response structure',
+              loading: false
+            });
+          }
+
+          return groupData;
         } catch (error) {
-          set({ 
+          console.error('Error fetching group details:', error);
+          set({
             error: error.response?.data?.message || 'Failed to fetch group details',
-            loading: false 
+            loading: false
           });
           throw error;
         }
@@ -98,7 +121,7 @@ const useGroupStore = create(
         try {
           const response = await axios.put(`/api/group/${groupId}`, updateData);
           set(state => ({
-            groups: state.groups.map(group => 
+            groups: state.groups.map(group =>
               group._id === groupId ? response.data : group
             ),
             currentGroup: response.data,
@@ -108,9 +131,9 @@ const useGroupStore = create(
           get()._clearMessages();
           return response.data;
         } catch (error) {
-          set({ 
+          set({
             error: error.response?.data?.message || 'Failed to update group',
-            loading: false 
+            loading: false
           });
           throw error;
         }
@@ -128,9 +151,9 @@ const useGroupStore = create(
           }));
           get()._clearMessages();
         } catch (error) {
-          set({ 
+          set({
             error: error.response?.data?.message || 'Failed to delete group',
-            loading: false 
+            loading: false
           });
           throw error;
         }
@@ -156,9 +179,9 @@ const useGroupStore = create(
           get()._clearMessages();
           return response.data;
         } catch (error) {
-          set({ 
+          set({
             error: error.response?.data?.message || 'Failed to add members',
-            loading: false 
+            loading: false
           });
           throw error;
         }
@@ -179,9 +202,9 @@ const useGroupStore = create(
           }));
           get()._clearMessages();
         } catch (error) {
-          set({ 
+          set({
             error: error.response?.data?.message || 'Failed to remove member',
-            loading: false 
+            loading: false
           });
           throw error;
         }
@@ -191,7 +214,7 @@ const useGroupStore = create(
         set({ loading: true });
         try {
           const response = await axios.patch(
-            `/api/group/${groupId}/members/${memberId}/role`, 
+            `/api/group/${groupId}/members/${memberId}/role`,
             { role }
           );
           set(state => ({
@@ -207,9 +230,9 @@ const useGroupStore = create(
           get()._clearMessages();
           return response.data;
         } catch (error) {
-          set({ 
+          set({
             error: error.response?.data?.message || 'Failed to change role',
-            loading: false 
+            loading: false
           });
           throw error;
         }
@@ -227,9 +250,9 @@ const useGroupStore = create(
           }));
           get()._clearMessages();
         } catch (error) {
-          set({ 
+          set({
             error: error.response?.data?.message || 'Failed to leave group',
-            loading: false 
+            loading: false
           });
           throw error;
         }
@@ -239,9 +262,9 @@ const useGroupStore = create(
         set({ loading: true });
         try {
           const response = await axios.post(`/api/group/${groupId}/join`);
-          
+
           if (response.data.requiresApproval) {
-            set({ 
+            set({
               loading: false,
               successMessage: 'Join request sent to admin for approval'
             });
@@ -252,13 +275,13 @@ const useGroupStore = create(
               successMessage: 'Successfully joined group'
             }));
           }
-          
+
           get()._clearMessages();
           return response.data;
         } catch (error) {
-          set({ 
+          set({
             error: error.response?.data?.message || 'Failed to join group',
-            loading: false 
+            loading: false
           });
           throw error;
         }
@@ -283,9 +306,9 @@ const useGroupStore = create(
           get()._clearMessages();
           return response.data;
         } catch (error) {
-          set({ 
+          set({
             error: error.response?.data?.message || 'Failed to update settings',
-            loading: false 
+            loading: false
           });
           throw error;
         }
@@ -312,9 +335,9 @@ const useGroupStore = create(
           get()._clearMessages();
           return response.data;
         } catch (error) {
-          set({ 
+          set({
             error: error.response?.data?.message || 'Failed to process payout',
-            loading: false 
+            loading: false
           });
           throw error;
         }
@@ -324,15 +347,15 @@ const useGroupStore = create(
         set({ loading: true });
         try {
           const response = await axios.get(`/api/group/${groupId}/payouts`);
-          set({ 
+          set({
             payoutHistory: response.data,
-            loading: false 
+            loading: false
           });
           return response.data;
         } catch (error) {
-          set({ 
+          set({
             error: error.response?.data?.message || 'Failed to fetch payout history',
-            loading: false 
+            loading: false
           });
           throw error;
         }
@@ -342,37 +365,46 @@ const useGroupStore = create(
       //               GROUP MESSAGING
       // ==============================================
 
-      sendMessage: async (groupId, content) => {
+      fetchGroupMessages: async (groupId) => {
         set({ loading: true });
         try {
-          const response = await axios.post(`/api/group/${groupId}/messages`, { content });
-          set(state => ({
-            groupMessages: [response.data, ...state.groupMessages],
+          const response = await axios.get(`/api/group/${groupId}/messages`);
+          set({
+            groupMessages: {
+              success: response.data.success,
+              count: response.data.count,
+              data: response.data.data
+            },
             loading: false
-          }));
+          });
           return response.data;
         } catch (error) {
-          set({ 
-            error: error.response?.data?.message || 'Failed to send message',
-            loading: false 
+          set({
+            error: error.response?.data?.message || 'Failed to fetch messages',
+            loading: false
           });
           throw error;
         }
       },
 
-      fetchGroupMessages: async (groupId) => {
+      // Update sendMessage
+      sendMessage: async (groupId, content) => {
         set({ loading: true });
         try {
-          const response = await axios.get(`/api/group/${groupId}/messages`);
-          set({ 
-            groupMessages: response.data,
-            loading: false 
-          });
+          const response = await axios.post(`/api/group/${groupId}/messages`, { content });
+          set(state => ({
+            groupMessages: {
+              ...state.groupMessages,
+              data: [response.data, ...state.groupMessages.data],
+              count: state.groupMessages.count + 1
+            },
+            loading: false
+          }));
           return response.data;
         } catch (error) {
-          set({ 
-            error: error.response?.data?.message || 'Failed to fetch messages',
-            loading: false 
+          set({
+            error: error.response?.data?.message || 'Failed to send message',
+            loading: false
           });
           throw error;
         }
@@ -389,9 +421,9 @@ const useGroupStore = create(
           }));
           get()._clearMessages();
         } catch (error) {
-          set({ 
+          set({
             error: error.response?.data?.message || 'Failed to delete message',
-            loading: false 
+            loading: false
           });
           throw error;
         }
@@ -403,7 +435,7 @@ const useGroupStore = create(
 
       clearError: () => set({ error: null }),
       clearSuccessMessage: () => set({ successMessage: null }),
-      resetGroupState: () => set({ 
+      resetGroupState: () => set({
         groups: [],
         currentGroup: null,
         groupMessages: [],

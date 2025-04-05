@@ -356,18 +356,36 @@ const useAuthStore = create(
         set({ loading: true, error: null });
         try {
           const { refreshToken } = get();
-          const response = await axios.post('/api/auth/token/refresh', { refreshToken });
-
+          
+          // Only proceed if we have a refresh token
+          if (!refreshToken) {
+            throw new Error('NO_REFRESH_TOKEN');
+          }
+      
+          const response = await axios.post('/api/auth/token/refresh', { 
+            refreshToken 
+          }, {
+            _retry: false // Don't retry refresh token requests
+          });
+      
+          // Update both tokens (assuming backend returns new refresh token)
           set({
             accessToken: response.data.accessToken,
+            refreshToken: response.data.refreshToken || refreshToken, // Keep old if new not provided
             loading: false
           });
+      
           return response.data;
         } catch (error) {
-          set({
-            error: error.response?.data?.message || 'Token refresh failed',
-            loading: false
-          });
+          set({ loading: false });
+          
+          // Only logout if we get specific error about invalid refresh token
+          if (error.response?.data?.code === 'INVALID_REFRESH_TOKEN') {
+            await get().logout(true); // Silent logout
+            throw new Error('SESSION_EXPIRED');
+          }
+          
+          // For other errors, just throw without logging out
           throw error;
         }
       },
@@ -642,26 +660,41 @@ axios.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-
+    
+    // Handle 401 Unauthorized
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-
+      
       try {
         if (!refreshPromise) {
           refreshPromise = useAuthStore.getState().refreshAccessToken()
+            .catch(err => {
+              // Only logout if no refresh token exists
+              if (err.message === 'NO_REFRESH_TOKEN') {
+                useAuthStore.getState().logout(true);
+              }
+              throw err;
+            })
             .finally(() => { refreshPromise = null; });
         }
+        
         await refreshPromise;
-
+        
+        // Retry with new token
         const { accessToken } = useAuthStore.getState();
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return axios(originalRequest);
+        
       } catch (refreshError) {
-        useAuthStore.getState().logout();
-        return Promise.reject(refreshError);
+        // Only propagate the error if it's not about missing refresh token
+        if (refreshError.message !== 'NO_REFRESH_TOKEN') {
+          throw refreshError;
+        }
+        // For missing refresh token, the logout already happened
+        return Promise.reject(error);
       }
     }
-
+    
     return Promise.reject(error);
   }
 );
